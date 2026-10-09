@@ -211,6 +211,63 @@ ENV=staging pytest  # 预发环境
 配置了 `test` / `staging` / `local` 三套。传入未定义的环境名会给出明确报错，
 不会静默使用错误配置。
 
+### 4.5 中文环境下的编码处理（踩坑记录）
+
+这个项目的中文用例名（来自 `data/testdata.yaml`）在中文 Windows 上会引发一个
+经典问题，这里记录完整的原因和解决方案，因为它体现的是**跨平台意识**。
+
+**现象**：在中文 Windows 上执行 `pytest`，即使代码完全正确也会崩：
+
+```
+File "d:\python\lib\site-packages\iniconfig\__init__.py", line 82, in _parse
+    for lineno, line in enumerate(line_iter):
+UnicodeDecodeError: 'gbk' codec can't decode byte 0x80 in position 47
+```
+
+**原因**（两个层面，容易只看到第一个）：
+
+1. **配置读取阶段**：pytest 通过 `iniconfig` 库读取 `pytest.ini`，
+   这个库用**系统 locale 编码**（中文 Windows 是 GBK）打开文件。
+   而 `pytest.ini` 里的注释是 UTF-8 编码的中文 → 解码失败。
+   **注意：崩溃发生在读取配置时，此时测试代码一行都还没执行。**
+
+2. **输出阶段**：即使配置读取正常，pytest 输出中文用例名时，
+   控制台按 GBK 解码 UTF-8 字节同样会崩。
+
+**解决方案**：
+
+| 位置 | 处理方式 | 作用 |
+|---|---|---|
+| `pytest.ini` | 注释全部改为英文，保持纯 ASCII | 避免配置读取阶段崩溃 |
+| `tests/conftest.py` | 对 `sys.stdout` / `sys.stderr` 调`reconfigure(encoding="utf-8")` | 避免输出阶段崩溃 |
+
+`conftest.py` 里的处理：
+
+```python
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+```
+
+**为什么用 `try-except` 兜底**：某些终端（如部分 IDE 控制台、
+被重定向的输出流）不支持 `reconfigure`，直接调用会抛异常。
+判断 `hasattr` 加异常兜底，保证在任何环境下都不会因这段代码而崩。
+
+**验证方式**：强制以 GBK 环境变量运行，确认仍然通过——
+`PYTHONIOENCODING=gbk pytest` → `15 passed`。
+
+**面试可讲**：
+
+> 「项目的中文用例名在中文 Windows 上会触发编码异常。我排查后发现有两层：
+> 一层是 pytest 读配置文件时用系统 locale 编码解码 UTF-8 注释，
+> 另一层是输出中文用例名时控制台解码失败。
+> 第一层我通过把配置文件注释改成英文解决，第二层在 conftest 里
+> 重新指定标准输出编码，并且加了异常兜底，因为不是所有终端都支持
+> 重新配置编码。这样在 CMD、PowerShell、Git Bash、IDE 控制台都能正常跑。」
+
 ---
 
 ## 5. 已知不足
