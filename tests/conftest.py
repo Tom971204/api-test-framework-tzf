@@ -19,6 +19,18 @@ import sys
 
 import pytest
 
+# Windows 中文环境下，pytest 输出中文用例名时，
+# 控制台默认按 GBK 解码 UTF-8 字节会报 UnicodeDecodeError。
+# 强制标准输出用 UTF-8，这样在 CMD / PyCharm 终端 / Git Bash 都能正常显示中文。
+# 面试可讲：「这是跨平台适配的细节，Windows 默认编码不是 UTF-8，
+#   测试报告里有中文用例名时必须显式指定编码，否则会出现乱码或解码异常。」
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
 # 把项目根目录加入模块搜索路径，
 # 这样测试用例里可以直接 from core.assert import ApiAssert，
 # 不需要在每个文件里写一长串相对路径。
