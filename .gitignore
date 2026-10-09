@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pytest
+.pytest_cache/
+report.html
+report.xml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Excel 等（如果有数据文件）
+*.xlsx

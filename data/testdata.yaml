@@ -1,0 +1,114 @@
+# Day 3 · 测试数据文件
+#
+# 这个文件就是「测试数据和代码分离」的落地。
+# 以后加一条用例只需要在这里加一段，不用改任何 Python 代码。
+#
+# 面试时这句话怎么说：
+# 「我把测试数据外置到 YAML，用例逻辑和测试数据分离，
+#   新增用例只需在 YAML 里追加配置，不需要改动代码。」
+
+cases:
+  # ---------- 正常场景 ----------
+  - id: normal_chinese
+    title: 正常场景-中文标题
+    body:
+      title: 接口自动化第三课
+    expect_title: 接口自动化第三课
+    # status 是期望的 HTTP 状态码，单独抽出来便于统一校验
+    expect_status: 200
+
+  - id: normal_english
+    title: 正常场景-英文标题
+    body:
+      title: hello day3
+    expect_title: hello day3
+    expect_status: 200
+
+  # ---------- 边界场景 ----------
+  - id: edge_empty
+    title: 边界场景-空标题
+    body:
+      title: ""
+    expect_title: ""
+    expect_status: 200
+
+  - id: edge_long_100
+    title: 边界场景-超长100字符
+    body:
+      title: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    expect_title: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    expect_status: 200
+
+  - id: edge_single_char
+    title: 边界场景-单个中文字
+    body:
+      title: 测
+    expect_title: 测
+    expect_status: 200
+
+  # ---------- 特殊字符场景 ----------
+  - id: special_symbols
+    title: 特殊字符-符号
+    body:
+      title: "测试@#$%^&*()"
+    expect_title: "测试@#$%^&*()"
+    expect_status: 200
+
+  - id: special_tab
+    title: 特殊字符-制表符
+    body:
+      title: "tab\there"
+    expect_title: "tab\there"
+    expect_status: 200
+
+  - id: special_newline
+    title: 特殊字符-换行符
+    body:
+      title: "换\n行"
+    expect_title: "换\n行"
+    expect_status: 200
+
+  # ---------- 故意失败的用例：用来演示"用例数据也能控制预期值" ----------
+  # 这条会把 expect_status 改成 999，实际接口返回 200，必然失败。
+  # 作用：让你看到改了 YAML 就改变了测试行为，不用动代码。
+  # 【注意】真实项目里不要留这条，看完可以删掉。
+  #- id: demo_will_fail
+   # title: 演示用例-故意失败
+    #body:
+    #  title: demo
+    #expect_title: demo
+   # expect_status: 999
+
+  # ============================================================
+  # 【Day 3 练习】下面这条是我刚加的，Python 代码一行都没改！
+  # 如果你跑 pytest 时看到「回归场景-新增用例」出现在报告里，
+  # 就说明「加用例不用改代码」这个设计生效了。
+  # 做完这个练习后可以把这一段删掉。
+  # ============================================================
+  - id: regression_new_case
+    title: 回归场景-新增用例
+    body:
+      title: 我是新增的用例
+    expect_title: 我是新增的用例
+    expect_status: 200
+
+  - id: regression_with_spaces
+    title: 回归场景-带首尾空格
+    body:
+      title: " 前后有空格  "
+    expect_title: " 前后有空格  "
+    expect_status: 200
+
+  - id: regression_json_chars
+    title: 回归场景-类JSON字符串
+    body:
+      title: '{"key": "value"}'
+    expect_title: '{"key": "value"}'
+    expect_status: 200
+
+  - id: my_first_case
+    title: 我自己加的用例
+    body:
+      title: hello day4
+    expect_title: hello day4
+    expect_status: 200
